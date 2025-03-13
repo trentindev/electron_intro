@@ -1,7 +1,7 @@
-const { app, BrowserWindow, ipcMain } = require("electron/main");
+const { app, BrowserWindow, ipcMain, nativeTheme } = require("electron/main");
 const path = require("node:path");
 
-const createWindow = () => {
+function createWindow() {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
@@ -9,18 +9,34 @@ const createWindow = () => {
       preload: path.join(__dirname, "preload.js"),
     },
   });
+
   win.loadFile("index.html");
-};
+}
+
+ipcMain.handle("dark-mode:toggle", () => {
+  if (nativeTheme.shouldUseDarkColors) {
+    nativeTheme.themeSource = "light";
+  } else {
+    nativeTheme.themeSource = "dark";
+  }
+  return nativeTheme.shouldUseDarkColors;
+});
+
+ipcMain.handle("dark-mode:system", () => {
+  nativeTheme.themeSource = "system";
+});
 
 app.whenReady().then(() => {
-  console.log("Electron App is Ready !"); // console serveur
-  ipcMain.handle("ping", () => "pong"); // affichera pong dans la console client
   createWindow();
-  console.log("Windows is ceated !"); // console serveur
+
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
 });
 
 app.on("window-all-closed", () => {
-  console.log("Windows are all close !");
   if (process.platform !== "darwin") {
     app.quit();
   }
